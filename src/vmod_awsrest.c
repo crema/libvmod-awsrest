@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "vcl.h"
 #include "vrt.h"
 #include "cache/cache.h"
 
@@ -15,14 +16,14 @@
 
 
 int
-init_function(struct vmod_priv *priv, const struct VCL_conf *conf)
+event_function(VRT_CTX, struct vmod_priv *priv, enum vcl_event_e e)
 {
 	return (0);
 }
 
 /////////////////////////////////////////////
 static const char *
-vmod_hmac_sha256(const struct vrt_ctx *ctx,
+vmod_hmac_sha256(VRT_CTX,
 	const char *key,size_t lkey, const char *msg,size_t lmsg,bool raw)
 {
 	hashid hash = MHASH_SHA256;
@@ -66,7 +67,7 @@ vmod_hmac_sha256(const struct vrt_ctx *ctx,
 }
 
 static const char *
-vmod_v4_getSignature(const struct vrt_ctx *ctx,
+vmod_v4_getSignature(VRT_CTX,
 	const char* secret_key, const char* dateStamp, const char* regionName, const char* serviceName,const char* string_to_sign
 ){
 	size_t len = strlen(secret_key) + 5;
@@ -84,7 +85,7 @@ vmod_v4_getSignature(const struct vrt_ctx *ctx,
 
 
 static const char *
-vmod_hash_sha256(const struct vrt_ctx *ctx, const char *msg)
+vmod_hash_sha256(VRT_CTX, const char *msg)
 {
 	MHASH td;
 	hashid hash = MHASH_SHA256;
@@ -103,7 +104,7 @@ vmod_hash_sha256(const struct vrt_ctx *ctx, const char *msg)
 	}
 	return p;
 }
-void vmod_v4_generic(const struct vrt_ctx *ctx,
+void vmod_v4_generic(VRT_CTX,
 	VCL_STRING service,               //= 's3';
 	VCL_STRING region,                //= 'ap-northeast-1';
 	VCL_STRING access_key,            //= 'your access key';
@@ -116,8 +117,8 @@ void vmod_v4_generic(const struct vrt_ctx *ctx,
 	
 	////////////////
 	//get data
-	char *method;
-	char *requrl;
+	const char *method;
+	const char *requrl;
 	struct http *hp;
 	struct gethdr_s gs;
 	
@@ -130,8 +131,8 @@ void vmod_v4_generic(const struct vrt_ctx *ctx,
 		hp = ctx->http_req;
 		gs.where = HDR_REQ;
 	}
-	method= hp->hd[HTTP_HDR_METHOD].b;
-	requrl= hp->hd[HTTP_HDR_URL].b;
+	method = hp->hd[HTTP_HDR_METHOD].b;
+	requrl = hp->hd[HTTP_HDR_URL].b;
 
 	////////////////
 	//create date
@@ -242,7 +243,8 @@ void vmod_v4_generic(const struct vrt_ctx *ctx,
 }
 
 VCL_STRING
-vmod_lf(const struct vrt_ctx *ctx){
+vmod_lf(VRT_CTX)
+{
 	char *p;
 	p = WS_Alloc(ctx->ws,2);
 	strcpy(p,"\n");
